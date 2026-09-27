@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowRight, Check, ChevronDown, Clock3, Compass, Facebook, Instagram, Leaf,
   LockKeyhole, Mail, MapPin, Menu, MessageCircle, Mountain, Phone, Search, Send,
@@ -114,6 +114,7 @@ function App() {
             <a href="#journey" onClick={(e) => { e.preventDefault(); setMenuOpen(false); scrollTo('journey'); }}>Our story</a>
             <a href="#packages" onClick={(e) => { e.preventDefault(); setMenuOpen(false); scrollTo('packages'); }}>Journeys</a>
             <a href="#experiences" onClick={(e) => { e.preventDefault(); setMenuOpen(false); scrollTo('experiences'); }}>Experiences</a>
+            <a href="#gallery" onClick={(e) => { e.preventDefault(); setMenuOpen(false); scrollTo('gallery'); }}>Gallery</a>
             <a href="#contact" onClick={(e) => { e.preventDefault(); setMenuOpen(false); scrollTo('contact'); }}>Contact</a>
             <button className="button button-small" onClick={() => openBooking()}>Plan my trip <ArrowRight size={15} /></button>
           </div>
@@ -146,6 +147,8 @@ function App() {
 
         <section className="experience-section section" id="experiences"><div className="container"><Reveal><div className="experience-heading"><div className="eyebrow light"><span /> Go beyond the itinerary</div><h2>Small moments.<br /><em>Big meaning.</em></h2><p>Travel becomes memorable when you leave space for the unexpected. These are the encounters our guests carry home.</p></div></Reveal><div className="experience-list">{experiences.map(({ icon: Icon, title, text }, i) => <Reveal key={title} delay={i * 120}><div className="experience-item"><span className="experience-number">0{i + 1}</span><Icon size={23} strokeWidth={1.4} /><div><h3>{title}</h3><p>{text}</p></div><ArrowRight size={18} /></div></Reveal>)}</div></div></section>
 
+        <GallerySection />
+
         <section className="promise section container"><Reveal><div className="promise-photo"><img src={images.elephant} alt="Elephants in the Sri Lankan wild" /><div className="photo-caption"><span>We leave a lighter footprint</span><small>Slow travel · local hosts · living heritage</small></div></div></Reveal><Reveal delay={150}><div className="promise-copy"><div className="eyebrow"><span /> Our promise</div><h2>See more.<br /><em>Take less.</em></h2><p className="lead">We believe an exceptional journey should enrich the places it touches.</p><div className="promise-points"><div><Check size={15} /><span>Local guides, local livelihoods</span></div><div><Check size={15} /><span>Respect for culture and tradition</span></div><div><Check size={15} /><span>Wildlife and nature, protected</span></div></div><button className="button button-dark" onClick={() => setModal('contact')}>Talk to our travel experts <ArrowRight size={16} /></button></div></Reveal></section>
 
         <ContactSection />
@@ -155,6 +158,128 @@ function App() {
       {modal && <InquiryModal type={modal} selectedPackage={selectedPackage} onClose={() => setModal(null)} />}
       {ramayanaOpen && <RamayanaItineraryModal onClose={() => setRamayanaOpen(false)} onBook={() => { setRamayanaOpen(false); openBooking('7-Day Legendary Ramayana Trail'); }} />}
     </div>
+  );
+}
+
+/* ─── Gallery ─── */
+const galleryItems = [
+  { src: '/images/gallery/IMG-20260301-WA0067.jpg.jpeg', type: 'image' as const, category: 'landscape', caption: 'Highland Serenity' },
+  { src: '/images/gallery/IMG-20260301-WA0058.jpg.jpeg', type: 'image' as const, category: 'culture',   caption: 'Cultural Roots' },
+  { src: '/images/gallery/IMG-20260213-WA0008.jpg.jpeg', type: 'image' as const, category: 'landscape', caption: 'Island Wilderness' },
+  { src: '/images/gallery/IMG-20260301-WA0057.jpg.jpeg', type: 'image' as const, category: 'wildlife',  caption: 'Wild Ceylon' },
+  { src: '/images/gallery/IMG-20260306-WA0017.jpg.jpeg', type: 'image' as const, category: 'culture',   caption: 'Living Heritage' },
+  { src: '/images/gallery/IMG-20260307-WA0002.jpg.jpeg', type: 'image' as const, category: 'landscape', caption: 'Forest Paths' },
+  { src: '/images/gallery/IMG-20260301-WA0059.jpg.jpeg', type: 'image' as const, category: 'wildlife',  caption: "Nature's Giants" },
+  { src: '/images/gallery/IMG-20260301-WA0066.jpg.jpeg', type: 'image' as const, category: 'landscape', caption: 'Emerald Highlands' },
+  { src: '/images/gallery/IMG-20260306-WA0002.jpg.jpeg', type: 'image' as const, category: 'culture',   caption: 'Sacred Moments' },
+  { src: '/images/gallery/IMG-20260915-WA0012.jpg.jpeg', type: 'image' as const, category: 'landscape', caption: 'Golden Hour' },
+  { src: '/images/gallery/IMG-20260915-WA0009.jpg.jpeg', type: 'image' as const, category: 'culture',   caption: 'Island Memories' },
+  { src: '/images/gallery/IMG-20240920-WA0009.jpg.jpeg', type: 'image' as const, category: 'wildlife',  caption: 'Gentle Encounters' },
+  { src: '/images/gallery/IMG-20260915-WA0003.jpg.jpeg', type: 'image' as const, category: 'landscape', caption: 'Coastal Light' },
+  { src: '/images/gallery/IMG-20240728-WA0000.jpg.jpeg', type: 'image' as const, category: 'culture',   caption: 'Local Spirit' },
+  { src: '/images/gallery/IMG-20260915-WA0013.jpg.jpeg', type: 'image' as const, category: 'landscape', caption: 'Timeless Ceylon' },
+  { src: '/images/gallery/VID-20260915-WA0020.mp4',      type: 'video' as const, category: 'landscape', caption: 'Ceylon in Motion' },
+];
+
+const galleryCategories = ['all', 'landscape', 'wildlife', 'culture'] as const;
+type GalleryCategory = typeof galleryCategories[number];
+
+function GallerySection() {
+  const [filter, setFilter] = useState<GalleryCategory>('all');
+  const [lightbox, setLightbox] = useState<number | null>(null);
+
+  const filtered = filter === 'all' ? galleryItems : galleryItems.filter(g => g.category === filter);
+
+  const openLb = (idx: number) => { setLightbox(idx); document.body.style.overflow = 'hidden'; };
+  const closeLb = () => { setLightbox(null); document.body.style.overflow = ''; };
+  const goPrev = (e?: MouseEvent) => { e?.stopPropagation(); setLightbox(i => i !== null ? (i - 1 + filtered.length) % filtered.length : null); };
+  const goNext = (e?: MouseEvent) => { e?.stopPropagation(); setLightbox(i => i !== null ? (i + 1) % filtered.length : null); };
+
+  useEffect(() => {
+    if (lightbox === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') goPrev();
+      else if (e.key === 'ArrowRight') goNext();
+      else if (e.key === 'Escape') closeLb();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox, filtered.length]);
+
+  const active = lightbox !== null ? filtered[lightbox] : null;
+
+  return (
+    <section className="gallery-section section" id="gallery">
+      <div className="container">
+        <Reveal>
+          <div className="gallery-header">
+            <div>
+              <div className="eyebrow"><span /> Captured moments</div>
+              <h2>Through the<br /><em>lens of Ceylon.</em></h2>
+            </div>
+            <p>Every frame a feeling — the people, places and wild beauty that make Sri Lanka unforgettable.</p>
+          </div>
+        </Reveal>
+
+        <Reveal delay={100}>
+          <div className="gallery-filters">
+            {galleryCategories.map(cat => (
+              <button
+                key={cat}
+                className={`gallery-filter-btn${filter === cat ? ' active' : ''}`}
+                onClick={() => setFilter(cat)}
+              >
+                {cat === 'all' ? 'All photos' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </button>
+            ))}
+          </div>
+        </Reveal>
+
+        <div className="gallery-masonry">
+          {filtered.map((item, idx) => (
+            <Reveal key={item.src + filter} delay={idx * 50}>
+              <button
+                className="gallery-tile"
+                onClick={() => openLb(idx)}
+                aria-label={`Open ${item.caption}`}
+              >
+                {item.type === 'video' ? (
+                  <>
+                    <video src={item.src} muted playsInline className="gallery-tile-media" />
+                    <div className="gallery-tile-play-icon">▶</div>
+                  </>
+                ) : (
+                  <img src={item.src} alt={item.caption} loading="lazy" className="gallery-tile-media" />
+                )}
+                <div className="gallery-tile-overlay">
+                  <span className="gallery-tile-caption">{item.caption}</span>
+                  <span className="gallery-tile-cat">{item.category}</span>
+                </div>
+              </button>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+
+      {lightbox !== null && active && (
+        <div className="gallery-lightbox" onClick={closeLb}>
+          <button className="gallery-lb-close" onClick={closeLb} aria-label="Close lightbox">✕</button>
+          <button className="gallery-lb-nav gallery-lb-prev" onClick={goPrev} aria-label="Previous">&#8249;</button>
+          <div className="gallery-lb-content" onClick={e => e.stopPropagation()}>
+            {active.type === 'video' ? (
+              <video key={active.src} src={active.src} controls autoPlay className="gallery-lb-media" />
+            ) : (
+              <img key={active.src} src={active.src} alt={active.caption} className="gallery-lb-media" />
+            )}
+            <div className="gallery-lb-meta">
+              <span className="gallery-lb-caption">{active.caption}</span>
+              <span className="gallery-lb-count">{lightbox + 1} / {filtered.length}</span>
+            </div>
+          </div>
+          <button className="gallery-lb-nav gallery-lb-next" onClick={goNext} aria-label="Next">&#8250;</button>
+        </div>
+      )}
+    </section>
   );
 }
 
