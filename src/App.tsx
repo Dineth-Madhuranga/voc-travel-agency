@@ -168,7 +168,6 @@ const galleryItems = [
   { src: '/images/gallery/IMG-20260213-WA0008.jpg.jpeg', type: 'image' as const, category: 'landscape', caption: 'Island Wilderness' },
   { src: '/images/gallery/IMG-20260301-WA0057.jpg.jpeg', type: 'image' as const, category: 'wildlife',  caption: 'Wild Ceylon' },
   { src: '/images/gallery/IMG-20260306-WA0017.jpg.jpeg', type: 'image' as const, category: 'culture',   caption: 'Living Heritage' },
-  { src: '/images/gallery/IMG-20260307-WA0002.jpg.jpeg', type: 'image' as const, category: 'landscape', caption: 'Forest Paths' },
   { src: '/images/gallery/IMG-20260301-WA0059.jpg.jpeg', type: 'image' as const, category: 'wildlife',  caption: "Nature's Giants" },
   { src: '/images/gallery/IMG-20260301-WA0066.jpg.jpeg', type: 'image' as const, category: 'landscape', caption: 'Emerald Highlands' },
   { src: '/images/gallery/IMG-20260306-WA0002.jpg.jpeg', type: 'image' as const, category: 'culture',   caption: 'Sacred Moments' },
@@ -178,6 +177,7 @@ const galleryItems = [
   { src: '/images/gallery/IMG-20260915-WA0003.jpg.jpeg', type: 'image' as const, category: 'landscape', caption: 'Coastal Light' },
   { src: '/images/gallery/IMG-20240728-WA0000.jpg.jpeg', type: 'image' as const, category: 'culture',   caption: 'Local Spirit' },
   { src: '/images/gallery/IMG-20260915-WA0013.jpg.jpeg', type: 'image' as const, category: 'landscape', caption: 'Timeless Ceylon' },
+  { src: '/images/gallery/IMG_5338.JPG.jpeg',            type: 'image' as const, category: 'landscape', caption: 'Ceylon Moments' },
   { src: '/images/gallery/VID-20260915-WA0020.mp4',      type: 'video' as const, category: 'landscape', caption: 'Ceylon in Motion' },
 ];
 
@@ -481,55 +481,204 @@ function ContactSection() {
 }
 
 function AdminPage({ onExit }: { onExit: () => void }) {
-  const [token, setToken] = useState(localStorage.getItem('adminToken'));
+  const [token, setToken]           = useState(localStorage.getItem('adminToken'));
   const [authLoading, setAuthLoading] = useState(false);
-  const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [authError, setAuthError] = useState(''); const [inquiries, setInquiries] = useState<Inquiry[]>([]); const [filter, setFilter] = useState<'all' | Inquiry['status']>('all');
-  
+  const [email, setEmail]           = useState('');
+  const [password, setPassword]     = useState('');
+  const [authError, setAuthError]   = useState('');
+  const [inquiries, setInquiries]   = useState<Inquiry[]>([]);
+  const [filter, setFilter]         = useState<'all' | Inquiry['status']>('all');
+  const [page, setPage]             = useState(1);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const PAGE_SIZE = 10;
+
   useEffect(() => { if (token) loadInquiries(); }, [token]);
-  
+
   const loadInquiries = async () => {
     try {
       const res = await fetch('/api/inquiries', { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) {
-        if (res.status === 401) signOut();
-        throw new Error('Failed to load');
-      }
-      const data = await res.json();
-      setInquiries(data);
+      if (!res.ok) { if (res.status === 401) signOut(); throw new Error('Failed'); }
+      setInquiries(await res.json());
     } catch (err) { console.error(err); }
   };
-  
+
   const signIn = async (event: FormEvent) => {
-    event.preventDefault(); setAuthError('');
+    event.preventDefault(); setAuthError(''); setAuthLoading(true);
     try {
       const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
-      if (!res.ok) throw new Error('Sign-in failed');
+      if (!res.ok) throw new Error('fail');
       const data = await res.json();
       localStorage.setItem('adminToken', data.token);
       setToken(data.token);
-    } catch (err) {
-      setAuthError('That sign-in did not work. Check your details and try again.');
-    }
+    } catch { setAuthError('That sign-in did not work. Check your details and try again.'); }
+    finally { setAuthLoading(false); }
   };
-  
+
   const signOut = () => { localStorage.removeItem('adminToken'); setToken(null); };
-  
+
   const updateStatus = async (id: string, status: Inquiry['status']) => {
     try {
       const res = await fetch('/api/inquiries', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ id, status })
+        body: JSON.stringify({ id, status }),
       });
-      if (res.ok) setInquiries((current) => current.map((item) => item.id === id ? { ...item, status } : item));
+      if (res.ok) setInquiries(cur => cur.map(i => i.id === id ? { ...i, status } : i));
     } catch (err) { console.error(err); }
   };
-  
-  const visible = useMemo(() => filter === 'all' ? inquiries : inquiries.filter((item) => item.status === filter), [filter, inquiries]);
-  
-  if (authLoading) return <div className="admin-loading">Opening the private inbox...</div>;
-  if (!token) return <div className="admin-login"><div className="admin-login-card"><button className="back-home" onClick={onExit}>← Back to website</button><img src="/images/logo.png" alt="Voice of Indigenous" style={{ height: '64px', margin: '0 auto 1.5rem', display: 'block' }} /><h1>Admin <em>Inbox</em></h1><p>Sign in to view new journey enquiries and messages.</p><form onSubmit={signIn}><label>Email address<input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label><label>Password<input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>{authError && <p className="form-error">{authError}</p>}<button className="button button-dark form-submit">Open inbox <LockKeyhole size={15} /></button></form></div></div>;
-  return <div className="admin-shell"><aside className="admin-sidebar"><a className="brand" href="#top"><img src="/images/logo.png" alt="Logo" style={{ height: '36px' }} /><span>Voice of <b>Indigenous</b><small>Staff workspace</small></span></a><div className="admin-nav"><span className="active"><Mail size={16} /> Enquiries</span><button onClick={onExit}><ArrowRight size={16} /> View website</button></div><div className="admin-sidebar-bottom"><span>Admin</span><button onClick={signOut}>Sign out</button></div></aside><main className="admin-main"><div className="admin-top"><div><h1>Good morning, <em>Admin.</em></h1></div><button className="button button-dark" aria-label="Refresh inbox" onClick={() => loadInquiries()}><RefreshCw size={16} /></button></div><div className="admin-stats"><div><small>All enquiries</small><strong>{inquiries.length}</strong></div><div><small>Needs attention</small><strong>{inquiries.filter((i) => i.status === 'new').length}</strong></div><div><small>Bookings</small><strong>{inquiries.filter((i) => i.kind === 'booking').length}</strong></div><div><small>Messages</small><strong>{inquiries.filter((i) => i.kind === 'contact').length}</strong></div></div><div className="inbox-toolbar"><h2>Latest enquiries</h2><div className="filter-tabs">{(['all', 'new', 'contacted', 'closed'] as const).map((item) => <button className={filter === item ? 'selected' : ''} key={item} onClick={() => setFilter(item)}>{item}</button>)}</div></div><div className="inquiry-list">{visible.length === 0 ? <div className="empty-inbox"><Mail size={25} /><h3>No enquiries here yet</h3><p>New trip requests will appear in this inbox.</p></div> : visible.map((item) => <article className="inquiry-row" key={item.id}><div className={`inquiry-badge ${item.kind}`}>{item.kind === 'booking' ? 'Booking' : 'Message'}</div><div className="inquiry-main"><div className="inquiry-title"><h3>{item.name}</h3><span>{new Date(item.created_at).toLocaleDateString()}</span></div><p>{item.package_name || item.message || 'No details provided.'}</p><div className="inquiry-details"><a href={`mailto:${item.email}`}><Mail size={13} /> {item.email}</a>{item.phone && <a href={`tel:${item.phone}`}><Phone size={13} /> {item.phone}</a>}{item.arrival_date && <span><MapPin size={13} /> Arriving {item.arrival_date}</span>}</div></div><select value={item.status} onChange={(e) => updateStatus(item.id, e.target.value as Inquiry['status'])}><option value="new">New</option><option value="contacted">Contacted</option><option value="closed">Closed</option></select></article>)}</div></main></div>;
+
+  const deleteInquiry = async (id: string) => {
+    try {
+      const res = await fetch('/api/inquiries', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) { setInquiries(cur => cur.filter(i => i.id !== id)); setDeleteConfirm(null); }
+    } catch (err) { console.error(err); }
+  };
+
+  const filtered = useMemo(() => filter === 'all' ? inquiries : inquiries.filter(i => i.status === filter), [filter, inquiries]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const visible    = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset page when filter changes
+  useEffect(() => { setPage(1); }, [filter]);
+
+  /* ── Login screen ── */
+  if (!token) return (
+    <div className="admin-login">
+      <div className="admin-login-card">
+        <button className="back-home" onClick={onExit}>← Back to website</button>
+        <img src="/images/logo.png" alt="Voice of Ceylon Travels" style={{ height: '64px', margin: '0 auto 1.5rem', display: 'block' }} />
+        <h1>Admin <em>Inbox</em></h1>
+        <p>Sign in to view journey enquiries and messages.</p>
+        <form onSubmit={signIn}>
+          <label>Email address<input required type="email" value={email} onChange={e => setEmail(e.target.value)} /></label>
+          <label>Password<input required type="password" value={password} onChange={e => setPassword(e.target.value)} /></label>
+          {authError && <p className="form-error">{authError}</p>}
+          <button className="button button-dark form-submit" disabled={authLoading}>
+            {authLoading ? 'Signing in…' : <><span>Open inbox</span> <LockKeyhole size={15} /></>}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+
+  /* ── Dashboard ── */
+  return (
+    <div className="admin-shell">
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div className="admin-delete-overlay" onClick={() => setDeleteConfirm(null)}>
+          <div className="admin-delete-modal" onClick={e => e.stopPropagation()}>
+            <h3>Delete enquiry?</h3>
+            <p>This action cannot be undone.</p>
+            <div className="admin-delete-actions">
+              <button className="admin-btn-cancel" onClick={() => setDeleteConfirm(null)}>Cancel</button>
+              <button className="admin-btn-delete" onClick={() => deleteInquiry(deleteConfirm)}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <aside className="admin-sidebar">
+        <a className="brand" href="#top">
+          <img src="/images/logo.png" alt="Logo" style={{ height: '36px' }} />
+          <span>Voice of <b>Ceylon</b><small>Staff workspace</small></span>
+        </a>
+        <div className="admin-nav">
+          <span className="active"><Mail size={16} /> Enquiries</span>
+          <button onClick={onExit}><ArrowRight size={16} /> View website</button>
+        </div>
+        <div className="admin-sidebar-bottom">
+          <span>Admin</span>
+          <button onClick={signOut}>Sign out</button>
+        </div>
+      </aside>
+
+      <main className="admin-main">
+        <div className="admin-top">
+          <div>
+            <h1>Good morning, <em>Admin.</em></h1>
+          </div>
+          <button className="admin-refresh-btn" aria-label="Refresh inbox" onClick={() => loadInquiries()}>
+            <RefreshCw size={16} />
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div className="admin-stats">
+          <div><small>All enquiries</small><strong>{inquiries.length}</strong></div>
+          <div><small>Needs attention</small><strong>{inquiries.filter(i => i.status === 'new').length}</strong></div>
+          <div><small>Bookings</small><strong>{inquiries.filter(i => i.kind === 'booking').length}</strong></div>
+          <div><small>Messages</small><strong>{inquiries.filter(i => i.kind === 'contact').length}</strong></div>
+        </div>
+
+        {/* Toolbar */}
+        <div className="inbox-toolbar">
+          <h2>Latest enquiries</h2>
+          <div className="filter-tabs">
+            {(['all', 'new', 'contacted', 'closed'] as const).map(s => (
+              <button key={s} className={filter === s ? 'selected' : ''} onClick={() => setFilter(s)}>{s}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* List */}
+        <div className="inquiry-list">
+          {visible.length === 0 ? (
+            <div className="empty-inbox">
+              <Mail size={25} />
+              <h3>No enquiries here yet</h3>
+              <p>New trip requests will appear in this inbox.</p>
+            </div>
+          ) : visible.map(item => (
+            <article className="inquiry-row" key={item.id}>
+              <div className={`inquiry-badge ${item.kind}`}>{item.kind === 'booking' ? 'Booking' : 'Message'}</div>
+              <div className="inquiry-main">
+                <div className="inquiry-title">
+                  <h3>{item.name}</h3>
+                  <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                </div>
+                <p>{item.package_name || item.message || 'No details provided.'}</p>
+                <div className="inquiry-details">
+                  <a href={`mailto:${item.email}`}><Mail size={13} /> {item.email}</a>
+                  {item.phone && <a href={`tel:${item.phone}`}><Phone size={13} /> {item.phone}</a>}
+                  {item.arrival_date && <span><MapPin size={13} /> Arriving {item.arrival_date}</span>}
+                </div>
+              </div>
+              <div className="inquiry-actions">
+                <select value={item.status} onChange={e => updateStatus(item.id, e.target.value as Inquiry['status'])}>
+                  <option value="new">New</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="closed">Closed</option>
+                </select>
+                <button className="inquiry-delete-btn" title="Delete enquiry" onClick={() => setDeleteConfirm(item.id)}>
+                  <X size={15} />
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="admin-pagination">
+            <button className="admin-page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>‹ Prev</button>
+            <div className="admin-page-numbers">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+                <button key={n} className={`admin-page-num${page === n ? ' active' : ''}`} onClick={() => setPage(n)}>{n}</button>
+              ))}
+            </div>
+            <button className="admin-page-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next ›</button>
+          </div>
+        )}
+      </main>
+    </div>
+  );
 }
 
 export default App;

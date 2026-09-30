@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
@@ -162,6 +162,19 @@ export default async function handler(req, res) {
     const { id, status } = req.body;
     if (!id || !status) return res.status(400).json({ error: 'id and status required' });
     await Inquiry.findByIdAndUpdate(id, { status });
+    return res.status(200).json({ ok: true });
+  }
+
+  // DELETE — remove inquiry (protected)
+  if (req.method === 'DELETE') {
+    try {
+      verifyToken(req);
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: 'id required' });
+    await Inquiry.findByIdAndDelete(id);
     return res.status(200).json({ ok: true });
   }
 
