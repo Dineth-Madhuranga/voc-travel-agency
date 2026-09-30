@@ -1,4 +1,4 @@
-﻿import nodemailer from 'nodemailer';
+import nodemailer from 'nodemailer';
 import { connectDB, Inquiry } from './utils/db.js';
 import jwt from 'jsonwebtoken';
 
@@ -67,7 +67,7 @@ function buildGuestEmail(inquiry) {
     <p>Thank you for reaching out to Voice of Ceylon Travels! We have received your ${inquiry.kind === 'booking' ? 'journey enquiry' : 'message'} and our travel team will be in touch with you very soon.</p>
     ${inquiry.message ? `<div style="margin-top:16px;padding:16px;background:#f6f1e6;border-radius:8px;font-size:14px;color:#5a6b60;"><strong>Your message:</strong><br/>${escapeHtml(inquiry.message)}</div>` : ''}
     <p style="margin-top:24px;">With warm regards,<br/><strong>Voice of Ceylon Travels Team</strong></p>
-    <p style="font-size:13px;color:#5a6b60;">📧 infovoiceylontravels@gmail.com<br/>📞 0766724916</p>
+    <p style="font-size:13px;color:#5a6b60;">📧 infovoceylontravels@gmail.com<br/>📞 0766724916</p>
   </div>
   <div style="padding:18px 32px;background:#f6f1e6;font-size:11px;color:#5a6b60;">© 2025 Voice of Ceylon Travels · 193/Katugastota, Kandy</div>
 </div></body></html>`;
@@ -81,7 +81,7 @@ async function sendEmails(inquiry) {
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
   });
 
-  const teamEmail = process.env.TEAM_EMAIL || 'infovoiceylontravels@gmail.com';
+  const teamEmail = process.env.TEAM_EMAIL || 'infovoceylontravels@gmail.com';
   const fromEmail = process.env.SMTP_USER;
 
   await Promise.all([

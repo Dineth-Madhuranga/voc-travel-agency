@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Disallow admin panel from indexing
+Disallow: /admin
+
+# Sitemap location
+Sitemap: https://www.voceylontravels.com/sitemap.xml
