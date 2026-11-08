@@ -141,7 +141,7 @@ function App() {
           <Reveal delay={150}><div className="intro-copy"><div className="eyebrow"><span /> The Voice of Indigenous</div><h2>Not just a place<br /><em>to visit.</em></h2><p className="lead">Sri Lanka is a story still being written — in forest paths, family kitchens, ancient rituals and the smiles of people who call this island home.</p><p>We create thoughtful, small-scale journeys that take you beyond the checklist. Our trips connect you with local hosts, indigenous knowledge and the landscapes that make Ceylon unforgettable.</p><button className="text-link" onClick={() => openBooking()}>Meet the island on its terms <ArrowRight size={16} /></button></div></Reveal>
         </section>
 
-        <section className="statement"><div className="statement-image" /><div className="statement-overlay" /><Reveal><div className="container statement-inner"><div className="statement-eyebrow">Made for the curious</div><p>Come as a<br />traveller.<br /><span className="italic-text">Leave as a friend.</span></p></div></Reveal></section>
+        <StatementSection />
 
         <section className="section packages-section" id="packages"><div className="container"><Reveal><div className="section-heading"><div><div className="eyebrow"><span /> Curated journeys</div><h2>Seven ways to feel<br /><em>the soul of Ceylon.</em></h2></div><p>From first light in the highlands to salt air on the south coast, choose the pace and feeling that calls to you.</p></div></Reveal><div className="package-grid">{packages.map((item, index) => <Reveal key={item.id} delay={index * 100}><PackageCard item={item} featured={index === 0} onBook={() => openBooking(item.title)} onItinerary={item.hasItinerary ? () => setRamayanaOpen(true) : undefined} /></Reveal>)}</div></div></section>
 
@@ -158,6 +158,57 @@ function App() {
       {modal && <InquiryModal type={modal} selectedPackage={selectedPackage} onClose={() => setModal(null)} />}
       {ramayanaOpen && <RamayanaItineraryModal onClose={() => setRamayanaOpen(false)} onBook={() => { setRamayanaOpen(false); openBooking('7-Day Legendary Ramayana Trail'); }} />}
     </div>
+  );
+}
+
+/* ─── Statement Slideshow ─── */
+const statementSlides = [
+  '/images/statement-slide-1.jpg',
+  '/images/statement-slide-2.jpg',
+  '/images/statement-slide-3.jpg',
+  '/images/statement-slide-4.jpg',
+  '/images/statement-slide-5.jpg',
+];
+
+function StatementSection() {
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent(prev => (prev + 1) % statementSlides.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <section className="statement">
+      <div className="statement-slides">
+        {statementSlides.map((src, i) => (
+          <div
+            key={src}
+            className={`statement-slide${i === current ? ' active' : ''}`}
+            style={{ backgroundImage: `url('${src}')` }}
+          />
+        ))}
+      </div>
+      <div className="statement-overlay" />
+      <div className="statement-dots">
+        {statementSlides.map((_, i) => (
+          <button
+            key={i}
+            className={`statement-dot${i === current ? ' active' : ''}`}
+            onClick={() => setCurrent(i)}
+            aria-label={`Slide ${i + 1}`}
+          />
+        ))}
+      </div>
+      <Reveal>
+        <div className="container statement-inner">
+          <div className="statement-eyebrow">Made for the curious</div>
+          <p>Come as a<br />traveller.<br /><span className="italic-text">Leave as a friend.</span></p>
+        </div>
+      </Reveal>
+    </section>
   );
 }
 
@@ -179,6 +230,8 @@ const galleryItems = [
   { src: '/images/gallery/IMG-20260915-WA0013.jpg.jpeg', type: 'image' as const, category: 'landscape', caption: 'Timeless Ceylon' },
   { src: '/images/gallery/IMG_5338.JPG.jpeg',            type: 'image' as const, category: 'landscape', caption: 'Ceylon Moments' },
   { src: '/images/gallery/VID-20260915-WA0020.mp4',      type: 'video' as const, category: 'landscape', caption: 'Ceylon in Motion' },
+  { src: '/images/gallery/tour-guide-1.jpg',             type: 'image' as const, category: 'culture',   caption: 'Guided Discovery' },
+  { src: '/images/gallery/tour-guide-2.jpg',             type: 'image' as const, category: 'culture',   caption: 'Tour Experience' },
 ];
 
 const galleryCategories = ['all', 'landscape', 'wildlife', 'culture'] as const;
